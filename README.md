@@ -1,2 +1,2 @@
-# Send_file_to_server_application
+# send-file-to-server-application
 Test task for VK
