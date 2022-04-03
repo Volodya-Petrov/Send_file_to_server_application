@@ -6,16 +6,73 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <fcntl.h>
 
-#define COUNTOFWAITINGCONNECTIONS  10
+#define COUNT_OF_WAITING_CONNECTIONS  10
+#define FILE_NAME_SIZE 20
+#define FILE_PART_SIZE 512
 
 void *get_in_addr(struct sockaddr *sa)
 {
+
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
     }
 
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+int file_loading(int connection_fd)
+{
+    char buffer_for_name[FILE_NAME_SIZE + 1];
+    char buffer_for_file[FILE_PART_SIZE];
+    ssize_t read_bytes;
+    ssize_t write_bytes;
+    read_bytes = recv(connection_fd, buffer_for_name, FILE_NAME_SIZE, 0);
+    buffer_for_name[read_bytes] = "\0";
+    if (read_bytes < 0)
+    {
+        perror("Failed get file name");
+        close(connection_fd);
+        return 1;
+    }
+    int fopen = open(buffer_for_name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    if (fopen < 0)
+    {
+        perror("File create error");
+        send(connection_fd, "n", 1, 0);
+        close(connection_fd);
+        return 1;
+    }
+    if (send(connection_fd, "y", 1, 0) < 0)
+    {
+        perror("Failed response");
+        close(connection_fd);
+        return 1;
+    }
+    while ((read_bytes = recv(connection_fd, buffer_for_file, FILE_PART_SIZE, 0)) > 0)
+    {
+        write_bytes = write(fopen, buffer_for_file, read_bytes);
+        if (write_bytes != read_bytes)
+        {
+            perror("Write in file error");
+            write_bytes = -1;
+            break;
+        }
+    }
+    close(fopen);
+    close(connection_fd);
+    if (read_bytes < 0 || write_bytes < 0)
+    {
+        if (remove(buffer_for_name) == -1)
+        {
+            perror("Remove file error");
+        }
+        return 1;
+    }
+    return 0;
 }
 
 int start_server(const char* port, const char* directory_name)
@@ -44,7 +101,8 @@ int start_server(const char* port, const char* directory_name)
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
         {
             perror("setsockopt");
-            exit(1);
+            close(socket_fd);
+            continue;
         }
         if (bind(socket_fd, p->ai_addr, p->ai_addrlen) == -1)
         {
@@ -60,9 +118,14 @@ int start_server(const char* port, const char* directory_name)
         return 2;
     }
     freeaddrinfo(server_info);
-    if (listen(socket_fd, COUNTOFWAITINGCONNECTIONS) == -1)
+    if (listen(socket_fd, COUNT_OF_WAITING_CONNECTIONS) == -1)
     {
         perror("listen");
+        exit(1);
+    }
+    if (mkdir(directory_name, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST)
+    {
+        perror("Failed to create directory");
         exit(1);
     }
     while (1)
@@ -78,13 +141,7 @@ int start_server(const char* port, const char* directory_name)
         inet_ntop(connection_addr.ss_family,
                   get_in_addr((struct sockaddr *)&connection_addr),
                   s, sizeof s);
-        if (!fork())
-        {
-            close(socket_fd);
 
-            close(connection_fd);
-            exit(0);
-        }
-        close(connection_fd);
+        file_loading(connection_fd);
     }
 }
