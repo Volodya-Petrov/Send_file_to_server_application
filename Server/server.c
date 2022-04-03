@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include "server.h"
 
 #define COUNT_OF_WAITING_CONNECTIONS  10
 #define FILE_NAME_SIZE 20
