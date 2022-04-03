@@ -32,13 +32,13 @@ int file_loading(int connection_fd)
     ssize_t read_bytes;
     ssize_t write_bytes;
     read_bytes = recv(connection_fd, buffer_for_name, FILE_NAME_SIZE, 0);
-    buffer_for_name[read_bytes] = "\0";
     if (read_bytes < 0)
     {
         perror("Failed get file name");
         close(connection_fd);
         return 1;
     }
+    buffer_for_name[read_bytes] = '\0';
     int fopen = open(buffer_for_name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
     if (fopen < 0)
     {
@@ -102,8 +102,7 @@ int start_server(const char* port, const char* directory_name)
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
         {
             perror("setsockopt");
-            close(socket_fd);
-            continue;
+            exit(1);
         }
         if (bind(socket_fd, p->ai_addr, p->ai_addrlen) == -1)
         {
@@ -116,7 +115,7 @@ int start_server(const char* port, const char* directory_name)
     if (p == NULL)
     {
         fprintf(stderr, "server: failed to bind\n");
-        return 2;
+        exit(1);
     }
     freeaddrinfo(server_info);
     if (listen(socket_fd, COUNT_OF_WAITING_CONNECTIONS) == -1)
