@@ -1,8 +1,3 @@
-//
-// Created by devyatka on 03.04.2022.
-//
+#pragma once
 
-#ifndef CLIENT_CLIENT_H
-#define CLIENT_CLIENT_H
-
-#endif //CLIENT_CLIENT_H
+int send_file_to_server(char* ip, char* port, char* file_path, char* file_name);

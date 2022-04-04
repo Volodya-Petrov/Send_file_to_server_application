@@ -25,7 +25,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int file_loading(int connection_fd)
+int file_loading(int connection_fd, char* directory_name)
 {
     char buffer_for_name[FILE_NAME_SIZE + 1];
     char buffer_for_file[FILE_PART_SIZE];
@@ -39,18 +39,24 @@ int file_loading(int connection_fd)
         return 1;
     }
     buffer_for_name[read_bytes] = '\0';
-    int fopen = open(buffer_for_name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    char* path = calloc(strlen(directory_name) + strlen(buffer_for_name) + 1, sizeof(char));
+    strcat(path, directory_name);
+    strcat(path, "/");
+    strcat(path, buffer_for_name);
+    int fopen = open(path, O_CREAT|O_EXCL|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
     if (fopen < 0)
     {
         perror("File create error");
         send(connection_fd, "n", 1, 0);
         close(connection_fd);
+        free(path);
         return 1;
     }
     if (send(connection_fd, "y", 1, 0) < 0)
     {
         perror("Failed response");
         close(connection_fd);
+        free(path);
         return 1;
     }
     while ((read_bytes = recv(connection_fd, buffer_for_file, FILE_PART_SIZE, 0)) > 0)
@@ -67,16 +73,18 @@ int file_loading(int connection_fd)
     close(connection_fd);
     if (read_bytes < 0 || write_bytes < 0)
     {
-        if (remove(buffer_for_name) == -1)
+        if (remove(path) == -1)
         {
             perror("Remove file error");
         }
+        free(path);
         return 1;
     }
+    free(path);
     return 0;
 }
 
-int start_server(const char* port, const char* directory_name)
+int start_server(const char* port, char* directory_name)
 {
     struct addrinfo pattern, *server_info, *p;
     char s[INET6_ADDRSTRLEN];
@@ -128,6 +136,7 @@ int start_server(const char* port, const char* directory_name)
         perror("Failed to create directory");
         exit(1);
     }
+    printf("Server listening on port:%s", port);
     while (1)
     {
         struct sockaddr_storage connection_addr;
@@ -142,6 +151,6 @@ int start_server(const char* port, const char* directory_name)
                   get_in_addr((struct sockaddr *)&connection_addr),
                   s, sizeof s);
 
-        file_loading(connection_fd);
+        file_loading(connection_fd, directory_name);
     }
 }

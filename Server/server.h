@@ -1,3 +1,3 @@
 #pragma once
 
-int start_server(const char* port, const char* directory_name);
+int start_server(const char* port, char* directory_name);

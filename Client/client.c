@@ -34,12 +34,12 @@ int file_load(int connection_fd, int fopen, char* file_name)
     read_bytes = recv(connection_fd, response_buffer, 1, 0);
     if (read_bytes < 1)
     {
-        sprintf(stderr, "Response failed");
+        fprintf(stderr, "Response failed");
         return 1;
     }
     if (response_buffer[0] != 'y')
     {
-        sprintf(stderr, "Failed to create a file by the specified name, try another name");
+        fprintf(stderr, "Failed to create a file by the specified name, try another name");
         return 1;
     }
     while ((read_bytes = read(fopen, buffer, FILE_PART_SIZE)) > 0)
@@ -47,7 +47,7 @@ int file_load(int connection_fd, int fopen, char* file_name)
         write_bytes = send(connection_fd, buffer, read_bytes, 0);
         if (write_bytes != read_bytes)
         {
-            sprintf(stderr, "Sending file failed");
+            fprintf(stderr, "Sending file failed");
             return 1;
         }
     }
@@ -111,5 +111,7 @@ int send_file_to_server(char* ip, char* port, char* file_path, char* file_name)
             s, sizeof s);
     freeaddrinfo(server_info);
     int result = file_load(socket_fd, fopen, file_name);
-    exit(result);
+    close(fopen);
+    close(socket_fd);
+    return result;
 }

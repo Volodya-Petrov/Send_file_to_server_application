@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include "server.h"
 
-int main() {
-    printf("Hello, World!\n");
-    return 0;
+int main()
+{
+    start_server("1488", "result");
 }
