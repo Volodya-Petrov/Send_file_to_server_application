@@ -84,10 +84,9 @@ int file_loading(int connection_fd, char* directory_name)
     return 0;
 }
 
-int start_server(const char* port, char* directory_name)
+int listen_on_port(const char* port)
 {
     struct addrinfo pattern, *server_info, *p;
-    char s[INET6_ADDRSTRLEN];
     int socket_fd;
     int yes = 1;
     memset(&pattern, 0, sizeof pattern);
@@ -95,9 +94,10 @@ int start_server(const char* port, char* directory_name)
     pattern.ai_socktype = SOCK_STREAM;
     pattern.ai_flags = AI_PASSIVE;
     int status = getaddrinfo(NULL, port, &pattern, &server_info);
-    if (status != 0) {
+    if (status != 0)
+    {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-        return 1;
+        exit(1);
     }
     for (p = server_info; p != NULL; p = p->ai_next)
     {
@@ -131,12 +131,19 @@ int start_server(const char* port, char* directory_name)
         perror("listen");
         exit(1);
     }
+    return socket_fd;
+}
+
+int start_server(const char* port, char* directory_name)
+{
+    char s[INET6_ADDRSTRLEN];
+    int socket_fd = listen_on_port(port);
     if (mkdir(directory_name, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST)
     {
         perror("Failed to create directory");
         exit(1);
     }
-    printf("Server listening on port:%s", port);
+    fprintf(stdout, "Server listening on port:%s", port);
     while (1)
     {
         struct sockaddr_storage connection_addr;
