@@ -56,6 +56,7 @@ int file_load(int connection_fd, int fopen, char* file_name)
         perror("Error read data from file");
         return 1;
     }
+    printf("The file has been uploaded successfully\n");
     return 0;
 }
 
@@ -110,6 +111,7 @@ int send_file_to_server(char* ip, char* port, char* file_path, char* file_name)
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
             s, sizeof s);
     freeaddrinfo(server_info);
+    printf("Connected with server\n");
     int result = file_load(socket_fd, fopen, file_name);
     close(fopen);
     close(socket_fd);
