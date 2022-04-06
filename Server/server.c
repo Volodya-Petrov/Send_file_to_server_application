@@ -183,6 +183,7 @@ int start_server(const char* port, char* directory)
         perror("Failed to create directory");
         exit(1);
     }
+    printf("Server listening on port:%s\n", port);
     pthread_mutex_init(&accept_mutex, NULL);
     pthread_mutex_init(&file_mutex, NULL);
     for (int i = 0; i < THREADS_COUNT; i++)
