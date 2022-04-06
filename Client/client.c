@@ -34,12 +34,12 @@ int file_load(int connection_fd, int fopen, char* file_name)
     read_bytes = recv(connection_fd, response_buffer, 1, 0);
     if (read_bytes < 1)
     {
-        fprintf(stderr, "Response failed");
+        fprintf(stderr, "Response failed\n");
         return 1;
     }
     if (response_buffer[0] != 'y')
     {
-        fprintf(stderr, "Failed to create a file by the specified name, try another name");
+        fprintf(stderr, "Failed to create a file by the specified name, try another name\n");
         return 1;
     }
     while ((read_bytes = read(fopen, buffer, FILE_PART_SIZE)) > 0)
@@ -47,7 +47,7 @@ int file_load(int connection_fd, int fopen, char* file_name)
         write_bytes = send(connection_fd, buffer, read_bytes, 0);
         if (write_bytes != read_bytes)
         {
-            fprintf(stderr, "Sending file failed");
+            fprintf(stderr, "Sending file failed\n");
             return 1;
         }
     }

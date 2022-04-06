@@ -1,5 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
-mkdir -p build && \
-cd build && \
-cmake .. && cmake --build .
+set -e
+
+mkdir -p build
+cd build
+cmake ..
+cmake --build .

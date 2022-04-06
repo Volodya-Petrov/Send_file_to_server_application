@@ -32,14 +32,14 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int create_file(char* file_name, char* final_path)
+int create_file(char* file_name, char** final_path)
 {
-    final_path = calloc(strlen(directory_name) + strlen(file_name) + 2, sizeof(char));
-    strcat(final_path, directory_name);
-    strcat(final_path, "/");
-    strcat(final_path, file_name);
+    *final_path = calloc(strlen(directory_name) + strlen(file_name) + 2, sizeof(char));
+    strcat(*final_path, directory_name);
+    strcat(*final_path, "/");
+    strcat(*final_path, file_name);
     pthread_mutex_lock(&file_mutex);
-    int fopen = open(final_path, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
+    int fopen = open(*final_path, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
     pthread_mutex_unlock(&file_mutex);
     return fopen;
 }
@@ -59,8 +59,8 @@ int file_loading(int connection_fd)
     }
     buffer_for_name[read_bytes] = '\0';
     char* path;
-    int fopen = create_file(buffer_for_name, path);
-    if (fopen < 0)
+    int file_fd = create_file(buffer_for_name, &path);
+    if (file_fd < 0)
     {
         perror("File create error");
         send(connection_fd, "n", 1, 0);
@@ -72,12 +72,13 @@ int file_loading(int connection_fd)
     {
         perror("Failed response");
         close(connection_fd);
+        close(file_fd);
         free(path);
         return 1;
     }
     while ((read_bytes = recv(connection_fd, buffer_for_file, FILE_PART_SIZE, 0)) > 0)
     {
-        write_bytes = write(fopen, buffer_for_file, read_bytes);
+        write_bytes = write(file_fd, buffer_for_file, read_bytes);
         if (write_bytes != read_bytes)
         {
             perror("Write in file error");
@@ -85,7 +86,7 @@ int file_loading(int connection_fd)
             break;
         }
     }
-    close(fopen);
+    close(file_fd);
     close(connection_fd);
     if (read_bytes < 0 || write_bytes < 0)
     {
