@@ -15,12 +15,12 @@ $ ./build
 ```bash
 $ cd build
 ```
-# Server
+### Server
 ```bash
 $ cd Server
 $ ./Server port directory
 ```
-# Client
+### Client
 ```bash
 $ cd Client
 $ ./Server ip port path_to_file file_name_for_server
